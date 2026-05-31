@@ -397,7 +397,31 @@ function autoFillFromUrl() {
                 showModalMessage('未找到', '该预约不存在或已取消');
             }
         }, 500);
-    }
+    }// 修改操作：弹出修改框
+if (action === 'modify' && venue && date && time) {
+    setTimeout(() => {
+        const target = bookings.find(b => b.venue === venue && b.date === date && b.timeSlot === time);
+        if (target) {
+            showModalForm("修改预约", `
+                <div class="form-group"><label>新日期</label><input type="date" id="newDate" value="${target.date}"></div>
+                <div class="form-group"><label>新时段</label><input type="text" id="newTimeSlot" value="${target.timeSlot}" placeholder="如 15:00-16:00"></div>
+            `, () => {
+                const newDate = document.getElementById("newDate").value;
+                const newSlot = document.getElementById("newTimeSlot").value;
+                if (newDate && newSlot) {
+                    target.date = newDate;
+                    target.timeSlot = newSlot;
+                    saveData();
+                    renderLogs();
+                    showModalMessage("修改成功", `${target.venue} 改为 ${newDate} ${newSlot}`);
+                    closeModal();
+                } else showModalMessage("提示", "日期和时段不能为空");
+            });
+        } else {
+            showModalMessage('未找到', '该预约不存在');
+        }
+    }, 500);
+}
 
     // 其他操作：自动触发对应功能
     if (action === 'viewAll') {
