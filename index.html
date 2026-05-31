@@ -344,12 +344,151 @@
         { id: "b1", venue: "滨江体育中心·篮球馆", date: "2026-06-07", timeSlot: "19:00-20:00", status: "已预约", createTime: new Date().toISOString() },
         { id: "b2", venue: "云栖羽毛球馆", date: "2026-06-06", timeSlot: "14:00-15:00", status: "已预约", createTime: new Date().toISOString() },
     ];
-    function loadData() {
+    
+// ========== URL参数自动填充 ==========
+function getUrlParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+function autoFillFromUrl() {
+    const action = getUrlParam('action');
+    const venue = getUrlParam('venue');
+    const date = getUrlParam('date');
+    const time = getUrlParam('time');
+
+    // 自动填充下拉框
+    if (venue) {
+        const venueSelect = document.getElementById('venueSelect');
+        for (let i = 0; i < venueSelect.options.length; i++) {
+            if (venueSelect.options[i].value.includes(venue) || venue.includes(venueSelect.options[i].value)) {
+                venueSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    if (date) document.getElementById('bookDate').value = date;
+    if (time) {
+        const timeSelect = document.getElementById('timeSlotSelect');
+        for (let i = 0; i < timeSelect.options.length; i++) {
+            if (timeSelect.options[i].text === time) {
+                timeSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // 预约操作：弹出确认
+    if (action === 'book' && venue && date && time) {
+        setTimeout(() => {
+            if (confirm(`🤖 豆小江为您预填信息：\n\n场馆：${venue}\n日期：${date}\n时段：${time}\n\n确认预约吗？`)) {
+                addBooking(venue, date, time);
+            }
+        }, 500);
+    }
+
+    // 取消操作：弹出确认
+    if (action === 'cancel' && venue && date && time) {
+        setTimeout(() => {
+            const target = bookings.find(b => b.venue === venue && b.date === date && b.timeSlot === time);
+            if (target && confirm(`🤖 确认取消以下预约？\n\n场馆：${venue}\n日期：${date}\n时段：${time}`)) {
+                cancelBookingById(target.id);
+            } else if (!target) {
+                showModalMessage('未找到', '该预约不存在或已取消');
+            }
+        }, 500);
+    }
+
+    // 其他操作：自动触发对应功能
+    if (action === 'viewAll') {
+        setTimeout(() => funcViewAllVenues(), 500);
+    }
+    if (action === 'queryDate' && date) {
+        setTimeout(() => {
+            const bookedVenues = bookings.filter(b => b.date === date).map(b => b.venue);
+            const freeVenues = allVenues.filter(v => !bookedVenues.includes(v));
+            let msg = freeVenues.length ? `📅 ${date} 空闲场馆: ${freeVenues.join("、")}` : `📭 ${date} 所有场馆均已约满`;
+            showModalMessage("查询结果", msg);
+        }, 500);
+    }
+    if (action === 'myBookings') {
+        setTimeout(() => funcViewMyBookings(), 500);
+    }
+    if (action === 'history') {
+        setTimeout(() => funcHistory(), 500);
+    }
+    if (action === 'filterSport') {
+        const sport = getUrlParam('sport');
+        if (sport) {
+            setTimeout(() => {
+                let map = { "篮球":"滨江体育中心·篮球馆", "羽毛球":"云栖羽毛球馆", "游泳":"泉韵游泳馆", "网球":"活力网球中心", "瑜伽":"职工健身瑜伽室" };
+                let rec = map[sport] || "滨江体育中心（综合场）";
+                showModalMessage("推荐场馆", `🏅 推荐: ${rec} ，可使用快速面板预约。`);
+            }, 500);
+        }
+    }
+}// ========== URL参数自动填充 ==========
+function getUrlParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+function autoFillFromUrl() {
+    const action = getUrlParam('action');
+    const venue = getUrlParam('venue');
+    const date = getUrlParam('date');
+    const time = getUrlParam('time');
+
+    // 自动填充下拉框
+    if (venue) {
+        const venueSelect = document.getElementById('venueSelect');
+        for (let i = 0; i < venueSelect.options.length; i++) {
+            if (venueSelect.options[i].value.includes(venue) || venue.includes(venueSelect.options[i].value)) {
+                venueSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    if (date) document.getElementById('bookDate').value = date;
+    if (time) {
+        const timeSelect = document.getElementById('timeSlotSelect');
+        for (let i = 0; i < timeSelect.options.length; i++) {
+            if (timeSelect.options[i].text === time) {
+                timeSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // 预约操作：弹出确认
+    if (action === 'book' && venue && date && time) {
+        setTimeout(() => {
+            if (confirm(`🤖 豆小江为您预填信息：\n\n场馆：${venue}\n日期：${date}\n时段：${time}\n\n确认预约吗？`)) {
+                addBooking(venue, date, time);
+            }
+        }, 500);
+    }
+    
+    // 取消操作：弹出确认
+    if (action === 'cancel' && venue && date && time) {
+        setTimeout(() => {
+            const target = bookings.find(b => b.venue === venue && b.date === date && b.timeSlot === time);
+            if (target && confirm(`🤖 确认取消以下预约？\n\n场馆：${venue}\n日期：${date}\n时段：${time}`)) {
+                cancelBookingById(target.id);
+            } else if (!target) {
+                showModalMessage('未找到', '该预约不存在或已取消');
+            }
+        }, 500);
+    }
+}
+
+function loadData() {
         const stored = localStorage.getItem("gxj_bookings");
         if (stored) bookings = JSON.parse(stored);
         else bookings = demoBookings;
         saveData();
         renderLogs();
+        autoFillFromUrl(); // 自动读取URL参数
     }
     function saveData() { localStorage.setItem("gxj_bookings", JSON.stringify(bookings)); }
     function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 8); }
