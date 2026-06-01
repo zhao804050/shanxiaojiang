@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>工小江 · 场馆预约智能体 · 模态框版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, 'Noto Sans', sans-serif; }
+        body { background: linear-gradient(145deg, #eef2f7 0%, #d9e2ec 100%); min-height: 100vh; padding: 24px 20px; }
+        .app-container { max-width: 1400px; margin: 0 auto; background: rgba(255,255,255,0.75); backdrop-filter: blur(2px); border-radius: 3rem; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25); overflow: hidden; }
+        .hero { background: #1a3e50; padding: 1.5rem 2rem; color: white; display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+        .title-area h1 { font-size: 1.9rem; display: flex; align-items: center; gap: 12px; }
+        .title-area h1 span { background: #f4c542; color: #1a3e50; font-size: 1.2rem; padding: 4px 12px; border-radius: 60px; font-weight: 600; }
+        .sub { font-size: 0.85rem; opacity: 0.85; margin-top: 6px; }
+        .badge { background: #2e5e74; padding: 8px 18px; border-radius: 40px; font-size: 0.9rem; }
+        .dashboard { display: flex; flex-wrap: wrap; }
+        .functions-panel { flex: 2; min-width: 280px; background: #ffffffcc; backdrop-filter: blur(8px); padding: 1.8rem 1.5rem; border-right: 1px solid rgba(0,0,0,0.05); }
+        .functions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 8px; }
+        .func-card { background: white; border-radius: 28px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 3px 8px rgba(0,0,0,0.03); border: 1px solid #e2edf2; font-weight: 500; font-size: 0.9rem; color: #1f4e6e; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .func-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -10px rgba(0, 80, 100, 0.3); border-color: #7ab3c8; background: #fefdf8; }
+        .interaction-panel { flex: 3; min-width: 320px; background: #fefef9; padding: 1.8rem 1.8rem; display: flex; flex-direction: column; gap: 1.2rem; }
+        .info-card { background: #f0f6fa; border-radius: 2rem; padding: 1.2rem 1.4rem; }
+        .info-header { font-weight: 700; font-size: 1.2rem; border-left: 5px solid #f4c542; padding-left: 12px; margin-bottom: 12px; color: #1f3e4c; }
+        .result-area { background: #ffffff; border-radius: 1.5rem; padding: 1rem; min-height: 280px; max-height: 420px; overflow-y: auto; font-size: 0.9rem; border: 1px solid #dce9f0; }
+        .msg-item { padding: 8px 0; border-bottom: 1px solid #e9edf2; color: #1f2f38; }
+        .badge-small { background: #e7f0f5; border-radius: 20px; padding: 2px 10px; font-size: 0.7rem; display: inline-block; margin: 4px 4px 0 0; }
+        .small-action { background: none; border: none; color: #2a7f6e; cursor: pointer; font-size: 0.75rem; margin-left: 12px; text-decoration: underline; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 8px; align-items: center; }
+        select, input { padding: 8px 12px; border-radius: 40px; border: 1px solid #cbdbe2; background: white; font-size: 0.85rem; }
+        .btn-primary { background: #1a3e50; color: white; border: none; padding: 8px 18px; border-radius: 40px; cursor: pointer; font-weight: 500; }
+        footer { text-align: center; padding: 12px; font-size: 0.7rem; background: #eef3f7; color: #4a6272; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal-content { background: white; margin: auto; padding: 0; width: 90%; max-width: 500px; border-radius: 2rem; box-shadow: 0 20px 35px -8px rgba(0,0,0,0.3); animation: fadeInUp 0.2s ease; overflow: hidden; }
+        .modal-header { background: #1a3e50; color: white; padding: 1rem 1.5rem; font-weight: bold; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header .close { font-size: 1.8rem; cursor: pointer; line-height: 1; }
+        .modal-body { padding: 1.5rem; max-height: 60vh; overflow-y: auto; }
+        .modal-footer { padding: 0.8rem 1.5rem 1.2rem; text-align: right; border-top: 1px solid #eee; }
+        .modal-footer button { background: #f0f0f0; border: none; padding: 6px 18px; border-radius: 40px; cursor: pointer; }
+        .modal-footer button.primary { background: #1a3e50; color: white; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; }
+        .booking-item { padding: 10px; margin: 6px 0; background: #f0f6fa; border-radius: 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .booking-item:hover { border-color: #7ab3c8; background: #e8f4f8; }
+    </style>
+<base target="_blank">
+</head>
+<body>
+<div class="app-container">
+    <div class="hero">
+        <div class="title-area">
+            <h1>🏟️ 工小江 · <span>场馆预约智能体</span></h1>
+            <div class="sub">弹窗交互版 | 点击任意功能 → 模态框操作</div>
+        </div>
+        <div class="badge">⚡ 12项预约功能 | 数据本地存储</div>
+    </div>
+    <div class="dashboard">
+        <div class="functions-panel">
+            <div style="font-weight: 600; margin-bottom: 12px;">🎯 核心预约功能 (点击弹窗)</div>
+            <div class="functions-grid" id="funcGrid"></div>
+        </div>
+        <div class="interaction-panel">
+            <div class="info-card">
+                <div class="info-header">📌 快捷操作面板</div>
+                <div class="form-row">
+                    <select id="venueSelect">
+                        <option value="滨江体育中心·篮球馆">🏀 滨江体育中心·篮球馆</option>
+                        <option value="云栖羽毛球馆">🏸 云栖羽毛球馆</option>
+                        <option value="泉韵游泳馆">🏊 泉韵游泳馆</option>
+                        <option value="活力网球中心">🎾 活力网球中心</option>
+                        <option value="职工健身瑜伽室">🧘 职工瑜伽室</option>
+                    </select>
+                    <input type="date" id="bookDate">
+                    <select id="timeSlotSelect">
+                        <option>09:00-10:00</option>
+                        <option>10:00-11:00</option>
+                        <option>14:00-15:00</option>
+                        <option>15:00-16:00</option>
+                        <option>19:00-20:00</option>
+                    </select>
+                    <button class="btn-primary" id="quickBookBtn">➕ 快速预约</button>
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-header">📋 我的预约 & 运行日志</div>
+                <div class="result-area" id="logArea"></div>
+            </div>
+        </div>
+    </div>
+    <footer>⚙️ 工小江 · 场馆预约 | 模态框交互 | 数据持久化(localStorage)</footer>
+</div>
+
+<div id="globalModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="modalTitle">标题</span>
+            <span class="close" id="modalCloseBtn">&times;</span>
+        </div>
+        <div class="modal-body" id="modalBody">内容区域</div>
+        <div class="modal-footer" id="modalFooter">
+            <button id="modalCloseFooter">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== 常量 ==========
+    const allVenues = ["滨江体育中心·篮球馆", "云栖羽毛球馆", "泉韵游泳馆", "活力网球中心", "职工健身瑜伽室", "社区足球场", "体操综合馆"];
+    const sportMap = { "篮球": "滨江体育中心·篮球馆", "羽毛球": "云栖羽毛球馆", "游泳": "泉韵游泳馆", "网球": "活力网球中心", "瑜伽": "职工健身瑜伽室" };
+    const supportedTimeSlots = ["09:00-10:00", "10:00-11:00", "14:00-15:00", "15:00-16:00", "19:00-20:00"];
+
+    // ========== 数据 ==========
+    let bookings = [];
+    const demoBookings = [
+        { id: "b1", venue: "滨江体育中心·篮球馆", date: "2026-06-07", timeSlot: "19:00-20:00", status: "已预约", createTime: new Date().toISOString() },
+        { id: "b2", venue: "云栖羽毛球馆", date: "2026-06-06", timeSlot: "14:00-15:00", status: "已预约", createTime: new Date().toISOString() },
+    ];
+
+    // ========== 工具函数 ==========
+    function getUrlParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
+
+    function findTimeOption(timeStr) {
+        const timeSelect = document.getElementById('timeSlotSelect');
+        for (let i = 0; i < timeSelect.options.length; i++) {
+            if (timeSelect.options[i].text === timeStr) return i;
+        }
+        return -1;
+    }
+
+    // ========== 模态框 ==========
+    const modal = document.getElementById("globalModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalBody = document.getElementById("modalBody");
+    const modalFooter = document.getElementById("modalFooter");
+
+    function closeModal() { modal.style.display = "none"; }
+
+    function showModal(title, bodyHtml, showFooter = true, customFooterButtons = null) {
+        modalTitle.innerText = title;
+        modalBody.innerHTML = bodyHtml;
+        if (showFooter) {
+            if (customFooterButtons) modalFooter.innerHTML = customFooterButtons;
+            else modalFooter.innerHTML = `<button id="modalCloseFooter">关闭</button>`;
+            const closeBtn = document.getElementById("modalCloseFooter");
+            if (closeBtn) closeBtn.onclick = closeModal;
+        } else modalFooter.innerHTML = "";
+        modal.style.display = "flex";
+        document.getElementById("modalCloseBtn").onclick = closeModal;
+        window.onclick = function(e) { if (e.target === modal) closeModal(); };
+    }
+
+    function showModalMessage(title, message) {
+        showModal(title, `<div style="padding:8px 0;">${message}</div>`, true);
+    }
+
+    function showModalForm(title, formHtml, onConfirm) {
+        showModal(title, formHtml, true, `<button id="modalConfirmBtn" class="primary">确认</button> <button id="modalCancelBtn">取消</button>`);
+        document.getElementById("modalConfirmBtn").onclick = () => { onConfirm(); };
+        document.getElementById("modalCancelBtn").onclick = closeModal;
+    }
+
+    // ========== 数据操作 ==========
+    function loadData() {
+        const stored = localStorage.getItem("gxj_bookings");
+        if (stored) bookings = JSON.parse(stored);
+        else bookings = demoBookings;
+        saveData();
+        renderLogs();
+    }
+
+    function saveData() { localStorage.setItem("gxj_bookings", JSON.stringify(bookings)); }
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 8); }
+
+    function addBooking(venue, date, timeSlot) {
+        if (!venue || !date || !timeSlot) { showModalMessage("提示", "请完整填写场馆、日期、时段"); return false; }
+        if (!supportedTimeSlots.includes(timeSlot)) { showModalMessage("时段错误", `不支持该时段，可选：${supportedTimeSlots.join("、")}`); return false; }
+        const conflict = bookings.some(b => b.venue === venue && b.date === date && b.timeSlot === timeSlot);
+        if (conflict) { showModalMessage("预约冲突", `【${venue}】在 ${date} ${timeSlot} 已有预约`); return false; }
+        const newBooking = { id: generateId(), venue, date, timeSlot, status: "已预约", createTime: new Date().toISOString() };
+        bookings.push(newBooking);
+        saveData();
+        renderLogs();
+        showModalMessage("预约成功", `🎉 ${venue} | ${date} ${timeSlot} 已添加`);
+        return true;
+    }
+
+    function cancelBookingById(id) {
+        const index = bookings.findIndex(b => b.id === id);
+        if (index !== -1) {
+            const removed = bookings.splice(index, 1)[0];
+            saveData();
+            renderLogs();
+            showModalMessage("取消成功", `已取消: ${removed.venue} ${removed.date} ${removed.timeSlot}`);
+        } else showModalMessage("错误", "未找到该预约");
+    }
+
+    function renderLogs() {
+        const logDiv = document.getElementById("logArea");
+        if (!logDiv) return;
+        let html = `<div class="msg-item" style="background:#eef3fc; border-radius: 20px; padding:6px 12px; margin-bottom:10px;"><strong>🏷️ 当前有效预约 (${bookings.length}个)</strong></div>`;
+        if (bookings.length === 0) html += `<div class="msg-item">📭 暂无预约记录</div>`;
+        else {
+            bookings.forEach(book => {
+                html += `<div class="msg-item" style="display:flex; justify-content: space-between; flex-wrap:wrap;">
+                    <div><span>📅 ${book.date}</span> <strong>${book.venue}</strong> · ${book.timeSlot} <span class="badge-small">${book.status}</span></div>
+                    <div>
+                        <button class="small-action" onclick="cancelBookingById('${book.id}')">❌ 取消</button>
+                        <button class="small-action" onclick="editBookingById('${book.id}')">✏️ 改期</button>
+                    </div>
+                </div>`;
+            });
+        }
+        logDiv.innerHTML = html;
+    }
+
+    // ========== 修改预约功能 ==========
+    function editBookingById(id) {
+        const booking = bookings.find(b => b.id === id);
+        if (!booking) { showModalMessage("错误", "预约不存在"); return; }
+
+        showModalForm("修改预约", `
+            <div style="margin-bottom:12px; padding:10px; background:#f0f6fa; border-radius:12px; border-left:4px solid #f4c542;">
+                <div style="font-weight:600; margin-bottom:6px;">📌 当前预约</div>
+                <div>场馆：${booking.venue}</div>
+                <div>日期：${booking.date}</div>
+                <div>时段：${booking.timeSlot}</div>
+            </div>
+            <div class="form-group"><label>新日期</label><input type="date" id="newDate" value="${booking.date}"></div>
+            <div class="form-group"><label>新时段</label>
+                <select id="newTimeSlot">
+                    <option value="09:00-10:00">09:00-10:00</option>
+                    <option value="10:00-11:00">10:00-11:00</option>
+                    <option value="14:00-15:00">14:00-15:00</option>
+                    <option value="15:00-16:00">15:00-16:00</option>
+                    <option value="19:00-20:00">19:00-20:00</option>
+                </select>
+            </div>
+        `, () => {
+            const newDate = document.getElementById("newDate").value;
+            const newSlot = document.getElementById("newTimeSlot").value;
+            if (!newDate || !newSlot) { showModalMessage("提示", "日期和时段不能为空"); return; }
+            const conflict = bookings.some(b => b.id !== booking.id && b.venue === booking.venue && b.date === newDate && b.timeSlot === newSlot);
+            if (conflict) { showModalMessage("冲突", `【${booking.venue}】在 ${newDate} ${newSlot} 已有预约`); return; }
+            booking.date = newDate;
+            booking.timeSlot = newSlot;
+            saveData();
+            renderLogs();
+            showModalMessage("修改成功", `✅ ${booking.venue}<br>已改为 ${newDate} ${newSlot}`);
+        });
+
+        const slotIdx = findTimeOption(booking.timeSlot);
+        if (slotIdx !== -1) {
+            setTimeout(() => {
+                const select = document.getElementById('newTimeSlot');
+                if (select) select.selectedIndex = slotIdx;
+            }, 50);
+        }
+    }
+
+    // ========== URL 参数处理（核心修复）==========
+    function handleUrlAction() {
+        const action = getUrlParam('action');
+        const venue = getUrlParam('venue');
+        const date = getUrlParam('date');
+        const time = getUrlParam('time');
+
+        console.log('URL参数:', { action, venue, date, time });
+
+        if (!action || !venue) return;
+
+        // 预约
+        if (action === 'book' && date && time) {
+            setTimeout(() => {
+                if (confirm(`🤖 确认预约？
+
+场馆：${venue}
+日期：${date}
+时段：${time}`)) {
+                    addBooking(venue, date, time);
+                }
+            }, 500);
+            return;
+        }
+
+        // 修改 - 只带 venue 参数
+        if (action === 'modify') {
+            setTimeout(() => {
+                const venueBookings = bookings.filter(b => b.venue === venue);
+                console.log('找到预约:', venueBookings);
+
+                if (venueBookings.length === 0) {
+                    showModalMessage('未找到', `【${venue}】没有预约记录`);
+                    return;
+                }
+
+                if (venueBookings.length === 1) {
+                    editBookingById(venueBookings[0].id);
+                } else {
+                    // 多个预约，让用户选择
+                    let listHtml = venueBookings.map((b, i) => `
+                        <div class="booking-item" onclick="window._modBooking('${b.id}')">
+                            <div style="font-weight:600;">${i+1}. ${b.venue}</div>
+                            <div>📅 ${b.date} · ${b.timeSlot}</div>
+                        </div>
+                    `).join('');
+
+                    showModal("选择要修改的预约", `
+                        <div style="margin-bottom:12px;">该场馆有 ${venueBookings.length} 个预约，请点击选择：</div>
+                        ${listHtml}
+                    `, true);
+
+                    window._modBooking = function(id) {
+                        closeModal();
+                        setTimeout(() => editBookingById(id), 200);
+                    };
+                }
+            }, 500);
+            return;
+        }
+
+        // 取消 - 只带 venue 参数
+        if (action === 'cancel') {
+            setTimeout(() => {
+                const venueBookings = bookings.filter(b => b.venue === venue);
+                if (venueBookings.length === 0) {
+                    showModalMessage('未找到', `【${venue}】没有可取消的预约`);
+                    return;
+                }
+                if (venueBookings.length === 1) {
+                    const target = venueBookings[0];
+                    if (confirm(`🤖 确认取消？
+
+场馆：${target.venue}
+日期：${target.date}
+时段：${target.timeSlot}`)) {
+                        cancelBookingById(target.id);
+                    }
+                } else {
+                    let listHtml = venueBookings.map((b, i) => `
+                        <div class="booking-item" onclick="window._cancelBooking('${b.id}')">
+                            <div style="font-weight:600;">${i+1}. ${b.venue}</div>
+                            <div>📅 ${b.date} · ${b.timeSlot}</div>
+                        </div>
+                    `).join('');
+
+                    showModal("选择要取消的预约", `
+                        <div style="margin-bottom:12px;">该场馆有 ${venueBookings.length} 个预约，请点击选择：</div>
+                        ${listHtml}
+                    `, true);
+
+                    window._cancelBooking = function(id) {
+                        const target = bookings.find(b => b.id === id);
+                        if (target) {
+                            closeModal();
+                            setTimeout(() => {
+                                if (confirm(`🤖 确认取消？
+
+场馆：${target.venue}
+日期：${target.date}
+时段：${target.timeSlot}`)) {
+                                    cancelBookingById(target.id);
+                                }
+                            }, 200);
+                        }
+                    };
+                }
+            }, 500);
+            return;
+        }
+
+        // 支付 - 只带 venue 参数
+        if (action === 'pay') {
+            setTimeout(() => {
+                const venueBookings = bookings.filter(b => b.venue === venue && b.status !== '已支付');
+                if (venueBookings.length === 0) {
+                    showModalMessage('未找到', `【${venue}】没有待支付的预约`);
+                    return;
+                }
+                if (venueBookings.length === 1) {
+                    startPayBooking(venueBookings[0]);
+                } else {
+                    let listHtml = venueBookings.map((b, i) => `
+                        <div class="booking-item" onclick="window._payBooking('${b.id}')">
+                            <div style="font-weight:600;">${i+1}. ${b.venue}</div>
+                            <div>📅 ${b.date} · ${b.timeSlot}</div>
+                        </div>
+                    `).join('');
+
+                    showModal("选择要支付的预约", `
+                        <div style="margin-bottom:12px;">该场馆有 ${venueBookings.length} 个待支付预约：</div>
+                        ${listHtml}
+                    `, true);
+
+                    window._payBooking = function(id) {
+                        const target = bookings.find(b => b.id === id);
+                        if (target) {
+                            closeModal();
+                            setTimeout(() => startPayBooking(target), 200);
+                        }
+                    };
+                }
+            }, 500);
+            return;
+        }
+
+        // 其他查询类操作
+        if (action === 'viewAll') {
+            setTimeout(() => {
+                let listHtml = `<ul style="margin-left:1rem;">${allVenues.map(v => `<li>🏟️ ${v}</li>`).join("")}</ul>`;
+                showModal("全部场馆", listHtml);
+            }, 500);
+            return;
+        }
+
+        if (action === 'queryDate' && date) {
+            setTimeout(() => {
+                const bookedVenues = bookings.filter(b => b.date === date).map(b => b.venue);
+                const freeVenues = allVenues.filter(v => !bookedVenues.includes(v));
+                let msg = freeVenues.length ? `📅 ${date} 空闲场馆: ${freeVenues.join("、")}` : `📭 ${date} 所有场馆均已约满`;
+                showModalMessage("查询结果", msg);
+            }, 500);
+            return;
+        }
+
+        if (action === 'filterSport') {
+            const sport = getUrlParam('sport');
+            if (sport) {
+                setTimeout(() => {
+                    let rec = sportMap[sport] || "滨江体育中心（综合场）";
+                    showModalMessage("推荐场馆", `🏅 推荐: ${rec}`);
+                }, 500);
+            }
+            return;
+        }
+
+        if (action === 'myBookings') {
+            setTimeout(() => {
+                if (bookings.length === 0) showModalMessage("我的预约", "暂无任何预约记录");
+                else {
+                    let list = bookings.map(b => `<div>📌 ${b.venue} | ${b.date} ${b.timeSlot} <span class="badge-small">${b.status}</span></div>`).join("");
+                    showModal("当前预约列表", list);
+                }
+            }, 500);
+            return;
+        }
+
+        if (action === 'history') {
+            setTimeout(() => {
+                if (bookings.length === 0) showModalMessage("预约历史", "暂无历史");
+                else {
+                    let hist = bookings.map(b => `${b.venue} ${b.date} ${b.timeSlot} <span class="badge-small">${b.status}</span>`).join("<br>");
+                    showModal("全部预约历史", hist);
+                }
+            }, 500);
+            return;
+        }
+
+        if (action === 'rate' && venue) {
+            setTimeout(() => {
+                showModalForm("场馆评价", `
+                    <div style="margin-bottom:12px;">为 <strong>${venue}</strong> 打分</div>
+                    <div class="form-group"><label>评分</label>
+                        <select id="rating">
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="1">⭐</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>评价内容(选填)</label><textarea id="commentText" rows="3" style="width:100%; border-radius:12px; padding:8px; border:1px solid #cbdbe2;"></textarea></div>
+                `, () => {
+                    const rating = document.getElementById("rating").value;
+                    const comment = document.getElementById("commentText").value;
+                    let reviews = JSON.parse(localStorage.getItem("gxj_reviews") || "[]");
+                    reviews.push({ venue, rating, comment, time: new Date().toISOString() });
+                    localStorage.setItem("gxj_reviews", JSON.stringify(reviews));
+                    showModalMessage("评价成功", `${venue} 获得 ${rating} 星 ⭐`);
+                });
+            }, 500);
+            return;
+        }
+
+        if (action === 'favorite' && venue) {
+            setTimeout(() => {
+                let favs = localStorage.getItem("gxj_favs") || "";
+                let favList = favs ? favs.split(",") : [];
+                if (favList.includes(venue)) {
+                    showModalMessage("提示", `【${venue}】已在收藏列表中`);
+                } else {
+                    let newFavs = favs ? favs + "," + venue : venue;
+                    localStorage.setItem("gxj_favs", newFavs);
+                    showModalMessage("收藏成功", `已将【${venue}】加入常用场馆 ❤️`);
+                }
+            }, 500);
+            return;
+        }
+    }
+
+    function startPayBooking(target) {
+        showModalForm("模拟支付", `
+            <div style="text-align:center; padding:20px;">
+                <div style="font-size:3rem;">💳</div>
+                <div style="margin:12px 0;"><strong>${target.venue}</strong></div>
+                <div>日期：${target.date}</div>
+                <div>时段：${target.timeSlot}</div>
+                <div style="margin-top:12px; color:#666;">测试环境，无需真实扣款</div>
+            </div>
+        `, () => {
+            target.status = "已支付";
+            saveData();
+            renderLogs();
+            showModalMessage("支付成功", `✅ ${target.venue} ${target.date} 支付完成`);
+        });
+    }
+
+    // ========== 功能按钮 ==========
+    const functions = [
+        { name: "🏟️ 全部场馆", action: () => { window.location.href = '?action=viewAll'; } },
+        { name: "📅 查空闲", action: () => { let d = prompt('输入日期(YYYY-MM-DD):', '2026-06-15'); if(d) window.location.href = '?action=queryDate&date=' + d; } },
+        { name: "✍️ 自定义预约", action: funcReserveCustom },
+        { name: "❌ 取消预约", action: () => { let v = prompt('输入场馆名:'); if(v) window.location.href = '?action=cancel&venue=' + v; } },
+        { name: "📋 我的预约", action: () => { window.location.href = '?action=myBookings'; } },
+        { name: "⚡ 快速预定", action: funcSelectTimeAndBook },
+        { name: "🏅 运动推荐", action: () => { let s = prompt('输入运动类型:'); if(s) window.location.href = '?action=filterSport&sport=' + s; } },
+        { name: "💳 模拟支付", action: () => { let v = prompt('输入场馆名:'); if(v) window.location.href = '?action=pay&venue=' + v; } },
+        { name: "📜 预约历史", action: () => { window.location.href = '?action=history'; } },
+        { name: "⭐ 场馆评价", action: () => { let v = prompt('输入场馆名:'); if(v) window.location.href = '?action=rate&venue=' + v; } },
+        { name: "❤️ 收藏场馆", action: () => { let v = prompt('输入场馆名:'); if(v) window.location.href = '?action=favorite&venue=' + v; } },
+        { name: "🔄 修改预约", action: () => { let v = prompt('输入场馆名:'); if(v) window.location.href = '?action=modify&venue=' + v; } }
+    ];
+
+    function funcReserveCustom() {
+        showModalForm("自定义预约", `
+            <div class="form-group"><label>场馆</label><input id="customVenue" value="云栖羽毛球馆"></div>
+            <div class="form-group"><label>日期</label><input type="date" id="customDate"></div>
+            <div class="form-group"><label>时段</label>
+                <select id="customTimeSlot"><option>09:00-10:00</option><option>10:00-11:00</option><option>14:00-15:00</option><option>15:00-16:00</option><option>19:00-20:00</option></select>
+            </div>
+        `, () => {
+            const v = document.getElementById("customVenue").value;
+            const d = document.getElementById("customDate").value;
+            const t = document.getElementById("customTimeSlot").value;
+            if (v && d && t) addBooking(v, d, t);
+            else showModalMessage("信息不全", "请填写完整");
+        });
+    }
+
+    function funcSelectTimeAndBook() {
+        const venue = document.getElementById("venueSelect").value;
+        const date = document.getElementById("bookDate").value;
+        const timeSlot = document.getElementById("timeSlotSelect").value;
+        if (!date) showModalMessage("提示", "请选择有效日期");
+        else addBooking(venue, date, timeSlot);
+    }
+
+    function buildButtons() {
+        const container = document.getElementById("funcGrid");
+        functions.forEach(f => {
+            const btn = document.createElement("div");
+            btn.className = "func-card";
+            btn.innerHTML = `<i>${f.name.slice(0,2)}</i><strong>${f.name}</strong>`;
+            btn.onclick = f.action;
+            container.appendChild(btn);
+        });
+    }
+
+    // ========== 初始化 ==========
+    document.getElementById("quickBookBtn").onclick = funcSelectTimeAndBook;
+
+    // 设置默认日期为明天
+    const dateInput = document.getElementById("bookDate");
+    let tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dateInput.value = tomorrow.toISOString().slice(0, 10);
+
+    // 加载数据并处理URL参数
+    loadData();
+    buildButtons();
+
+    // 关键：确保DOM加载完成后再处理URL参数
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', handleUrlAction);
+    } else {
+        handleUrlAction();
+    }
+</script>
+</body>
+</html>
